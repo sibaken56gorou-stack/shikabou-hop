@@ -34,7 +34,7 @@ function writeHud(id,property,value){
  const node=$(id);if(property==='text')node.textContent=value;else if(property==='width')node.style.width=value;else node.setAttribute(property,value);
 }
 const inputTrace=[],inputIncidents=[];let lastInputEvent='待機中',touchInterruptions=0;
-function inputSnapshot(){return{version:'0.13.2',course:courseId,preview:coursePreview,mode,moveStyle,tapDirection,direction:input.right&&input.left?'左右同時':input.right?'右':input.left?'左':'なし',jump:input.jump,touches:Object.values(sources).reduce((n,set)=>n+[...set].filter(id=>id.startsWith('t')).length,0),interruptions:touchInterruptions,last:lastInputEvent,x:Math.round(player?.x||0),vx:Math.round(player?.vx||0)};}
+function inputSnapshot(){return{version:'0.13.3',course:courseId,preview:coursePreview,mode,moveStyle,tapDirection,direction:input.right&&input.left?'左右同時':input.right?'右':input.left?'左':'なし',jump:input.jump,touches:Object.values(sources).reduce((n,set)=>n+[...set].filter(id=>id.startsWith('t')).length,0),interruptions:touchInterruptions,last:lastInputEvent,x:Math.round(player?.x||0),vx:Math.round(player?.vx||0)};}
 function updateInputCheck(force=false){if(!inputCheckEnabled)return;const now=inputRealNow();if(!force&&now-lastInputCheckAt<100)return;lastInputCheckAt=now;const s=inputSnapshot();$('inputCheck').hidden=mode!=='playing';$('inputCheck').textContent=`v${s.version}｜移動入力：${s.direction}｜中断：${s.interruptions}\n最後：${s.last}｜接触：${s.touches}｜位置：${s.x}｜${s.mode}`;}
 function compactEvent(e){return{at:e.at,atReal:e.atReal,event:e.last,move:e.direction,jump:e.jump,...(e.native?{native:e.native}:{}),...(e.contacts?{contacts:e.contacts}:{})};}
 function inputBounds(node){
@@ -83,7 +83,7 @@ const regions=courseData?courseData.regions:[{x:0,label:'01 · はじまりの�
 const practiceAreas=courseData?courseData.practiceAreas:[{key:0,name:'丘',start:85,left:0,right:4400,finish:4300},{key:4400,name:'森',start:4445,left:4400,right:8200,finish:8100},{key:8200,name:'高原',start:8245,left:8200,right:LENGTH,finish:GOAL}];
 function roundGoal(){return practiceArea?.finish||GOAL;}
 function cameraTarget(x){if(canopyRun?.scene===0)return (canopy.shaft-W)/2;if(canopyRun?.boss&&!canopyRun.cleared&&W<=canopy.length-canopy.arenaStart)return Math.max(canopy.arenaStart-20,Math.min(canopy.length-W,x));const left=practiceArea?.left||0,right=practiceArea?.right||LENGTH;return Math.max(left,Math.min(right-W,x));}
-function regionAt(x){return regions.filter(r=>x>=r.x).at(-1)||regions[0];}
+function regionAt(x){for(let i=regions.length-1;i>0;i--)if(x>=regions[i].x)return regions[i];return regions[0];}
 function canopyCamera(dt,snap=false){
  if(!canopyRun)return;canopy.cameraY(canopyRun,player,dt,snap);
  const b=canopyRun.boss,center=player.x+player.w/2;
@@ -299,7 +299,7 @@ function configureCourseMenu(){
  if(canopy){
   $('arena').setAttribute('aria-label','縦と横にスクロールするアクションゲーム');
   $('game').setAttribute('aria-label','シカぼうを操作して大樹を登り、風を読んで大蜘蛛を倒そう');
-  $('tag').textContent='COURSE 1-3 / v0.13.2';$('message').innerHTML='風に揺れる<br>大樹の森';
+  $('tag').textContent='COURSE 1-3 / v0.13.3';$('message').innerHTML='風に揺れる<br>大樹の森';
   $('description').innerHTML='根元から頂上へ。葉と枝をつたって登ろう。<br>梢では風を読み、大樹の主・大蜘蛛に挑め！<br>金色の葉は、かくれ星の手がかり。'+(coursePreview?'<br>おためしプレイ：進行は保存されません。':'');
   $('start').textContent=courseAllowed?'1-3に挑戦 →':'エリアマップへ →';
   document.querySelectorAll('[data-practice]').forEach((b,i)=>{const a=practiceAreas[i];b.dataset.practice=String(a.key);b.innerHTML=`<strong>0${i+1} · ${a.name}</strong><span>${a.hint}</span>`;});
@@ -307,7 +307,7 @@ function configureCourseMenu(){
   return;
  }
  if(!waterCourse)return;
- $('tag').textContent='COURSE 1-2 / v0.13.2';$('message').innerHTML='水辺の向こうに、<br>ひみつの洞窟。';
+ $('tag').textContent='COURSE 1-2 / v0.13.3';$('message').innerHTML='水辺の向こうに、<br>ひみつの洞窟。';
  $('description').innerHTML='水辺 → 洞窟 → 夕映えの水辺。<br>沈む丸太を跳び、4種類の敵を見極めよう。<br>星は3つ、回復のドングリは6個。'+(coursePreview?'<br>おためしプレイ：進行は保存されません。':'');
  $('start').textContent=courseAllowed?'1-2に挑戦 →':'エリアマップへ →';
  document.querySelectorAll('[data-practice]').forEach((b,i)=>{const a=practiceAreas[i];b.dataset.practice=String(a.key);b.innerHTML=`<strong>0${i+1} · ${a.name}</strong><span>${a.hint}</span>`;});

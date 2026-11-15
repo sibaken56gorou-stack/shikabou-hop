@@ -39,7 +39,7 @@
  const curves=[[[88,558],[88,489],[248,485],[248,414]],[[248,414],[248,345],[104,341],[104,272]],[[104,272],[104,197],[246,202],[246,124]]];
  function curvePoint(curve,t){const a=1-t;return{x:a*a*a*curve[0][0]+3*a*a*t*curve[1][0]+3*a*t*t*curve[2][0]+t*t*t*curve[3][0],y:a*a*a*curve[0][1]+3*a*a*t*curve[1][1]+3*a*t*t*curve[2][1]+t*t*t*curve[3][1]};}
  const roads=curves.map(curve=>{const points=Array.from({length:81},(_,i)=>curvePoint(curve,i/80));let length=0;for(let i=0;i<points.length;i++){if(i)length+=Math.hypot(points[i].x-points[i-1].x,points[i].y-points[i-1].y);points[i].distance=length;}return{points,length};});
- function roadPoint(road,distance){const points=road.points;if(distance<=0)return points[0];if(distance>=road.length)return points.at(-1);const i=points.findIndex(p=>p.distance>=distance),a=points[i-1],b=points[i],t=(distance-a.distance)/(b.distance-a.distance);return{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};}
+ function roadPoint(road,distance){const points=road.points;if(distance<=0)return points[0];if(distance>=road.length)return points[points.length-1];const i=points.findIndex(p=>p.distance>=distance),a=points[i-1],b=points[i],t=(distance-a.distance)/(b.distance-a.distance);return{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};}
  function runFrame(ms){const durations=[100,100,90,110,100,100,90,110];let t=ms%800;for(let i=0;i<8;i++){if(t<durations[i])return i;t-=durations[i];}return 7;}
  function drawAvatar(){
   ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,180,220);ctx.save();ctx.translate(90,207);ctx.scale(facing*1.65,1.65);
@@ -90,7 +90,7 @@
  $('courseNo').addEventListener('click',()=>dialog.close());
  $('courseYes').addEventListener('click',()=>{
   if(selected===null)return;const c=courses[selected];if(!available(c))return;
-  if(c.ready){stopMapMusic();location.assign(`./?v=0.13.2&course=${c.id}&play=1${preview?'&preview=1':''}`);return;}
+  if(c.ready){stopMapMusic();location.assign(`./?v=0.13.3&course=${c.id}&play=1${preview?'&preview=1':''}`);return;}
   $('courseTitle').textContent=`${c.id}は、ただいま準備中`;$('courseDescription').textContent='マップでの移動と確認はここまで。\n新しいコースができたら、ここから出発できます。';$('courseYes').hidden=true;$('courseNo').textContent='マップに戻る';$('courseNo').focus();
  });
  dialog.addEventListener('close',()=>{selected=null;buttons[current].focus();});

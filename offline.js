@@ -3,12 +3,14 @@
  const button=document.getElementById('openOffline');
  if(!button||!('serviceWorker' in navigator)||location.protocol==='file:')return;
  button.hidden=false;
+ const appleMobile=/iPad|iPhone|iPod/.test(navigator.userAgent)||navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1;
+ const homeGuide=appleMobile?(navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches?'':'<p>ホーム画面から使う場合は、Safariの <b>共有 →「ホーム画面に追加」</b> で追加し、アイコンから開いて保存してください。</p>'):'<p>Androidでは、Chromeの <b>︙</b> からホーム画面に追加できます。</p>';
  const service=navigator.serviceWorker,dialog=document.createElement('dialog');
  dialog.className='shikabou-save-dialog';
  dialog.setAttribute('aria-labelledby','offlineTitle');
  dialog.innerHTML=`<h2 id="offlineTitle">オフラインで遊ぶ</h2>
   <p>Wi-Fiなどにつないだ状態で、ゲームを端末に保存してください。保存後は、通信なしで1-1〜1-3とエリアマップを遊べます。</p>
-  <p>Androidでは、Chromeの <b>︙ →「ホーム画面に追加」</b> からアイコンを追加できます。</p>
+  ${homeGuide}
   <div class="shikabou-save-actions"><button type="button" data-offline="save">ゲームを端末に保存</button><button type="button" data-offline="close">閉じる</button></div>
   <p class="shikabou-save-status" role="status">保存状態を確認しています…</p>`;
  document.body.append(dialog);
@@ -17,7 +19,7 @@
  const registration=service.register('./game-offline-worker.js',{scope:'./',updateViaCache:'none'}).catch(()=>service.getRegistration()).catch(()=>null);
  const request=async type=>{
   const r=await registration;
-  if(!r)throw Error('このブラウザでゲームを保存できません。Chromeで開いてお試しください。');
+  if(!r)throw Error(`このブラウザでゲームを保存できません。${appleMobile?'Safari':'Chrome'}で開いてお試しください。`);
   const target=r.active||(await Promise.race([service.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('保存機能を準備できませんでした。ページを開き直してください。')),10000))])).active;
   if(!target)throw Error('ページを開き直してから、もう一度お試しください。');
   const channel=new MessageChannel();
