@@ -34,7 +34,7 @@ function writeHud(id,property,value){
  const node=$(id);if(property==='text')node.textContent=value;else if(property==='width')node.style.width=value;else node.setAttribute(property,value);
 }
 const inputTrace=[],inputIncidents=[];let lastInputEvent='待機中',touchInterruptions=0;
-function inputSnapshot(){return{version:'0.13.1',course:courseId,preview:coursePreview,mode,moveStyle,tapDirection,direction:input.right&&input.left?'左右同時':input.right?'右':input.left?'左':'なし',jump:input.jump,touches:Object.values(sources).reduce((n,set)=>n+[...set].filter(id=>id.startsWith('t')).length,0),interruptions:touchInterruptions,last:lastInputEvent,x:Math.round(player?.x||0),vx:Math.round(player?.vx||0)};}
+function inputSnapshot(){return{version:'0.13.2',course:courseId,preview:coursePreview,mode,moveStyle,tapDirection,direction:input.right&&input.left?'左右同時':input.right?'右':input.left?'左':'なし',jump:input.jump,touches:Object.values(sources).reduce((n,set)=>n+[...set].filter(id=>id.startsWith('t')).length,0),interruptions:touchInterruptions,last:lastInputEvent,x:Math.round(player?.x||0),vx:Math.round(player?.vx||0)};}
 function updateInputCheck(force=false){if(!inputCheckEnabled)return;const now=inputRealNow();if(!force&&now-lastInputCheckAt<100)return;lastInputCheckAt=now;const s=inputSnapshot();$('inputCheck').hidden=mode!=='playing';$('inputCheck').textContent=`v${s.version}｜移動入力：${s.direction}｜中断：${s.interruptions}\n最後：${s.last}｜接触：${s.touches}｜位置：${s.x}｜${s.mode}`;}
 function compactEvent(e){return{at:e.at,atReal:e.atReal,event:e.last,move:e.direction,jump:e.jump,...(e.native?{native:e.native}:{}),...(e.contacts?{contacts:e.contacts}:{})};}
 function inputBounds(node){
@@ -100,8 +100,12 @@ const platforms=courseData?courseData.platforms.map(p=>({...p})):[
  [5740,400,180,'bridge'],[6860,400,190,'bridge'],
  [8390,308,150,'rock'],[8620,255,135,'rock'],[9030,275,150,'rock'],[9470,245,160,'rock'],[9960,275,145,'rock'],[10440,230,140,'rock'],[10910,265,160,'rock'],[11350,308,150,'rock'],[11550,258,145,'rock']
 ].map(([x,y,w,kind='wood'])=>({x,y,w,h:22,kind}));
-let furthestRegion=0;
-function reset(area=null){sceneTransition=null;waterScene=0;floatHintShown=false;$('sceneFade').hidden=true;if(waterCourse)waterCourse.resetPlatforms(platforms);practiceArea=area;canopyRun=canopy?canopy.createRun(area,platforms):null;menuOpen=false;menuSnapshot=null;pausedFrom='playing';celebration=null;$('practiceMenu').hidden=true;$('backPractice').hidden=true;$('choosePractice').hidden=false;$('skipCelebration').hidden=true;$('overlay').classList.remove('is-menu');$('messageCard').classList.remove('is-menu');player={x:canopy&&!area?32:85,y:338,w:38,h:62,vx:0,vy:0,grounded:true,face:1};enemies=courseData?courseData.createEnemies():[[700,640,860],[1550,1400,1630],[2100,2020,2160],[2810,2650,2890],[3250,3160,3320],[3850,3770,4000],[5100,5000,5200],[6400,6280,6540],[7100,7080,7200],[7620,7540,7720],[8500,8370,8610],[9100,8980,9190],[10070,9990,10180],[11490,11400,11600]].map(([x,min,max],i)=>{const kind=x>=8200?'rock':x>=4400?'mushroom':'walker',baseY=groundAt(x).y-30;return{x,y:baseY,baseY,w:38,h:30,min,max,kind,v:(i%2?1:-1)*(kind==='rock'?72:kind==='mushroom'?24:44),vy:0,hopWait:.8+(i%3)*.35,rollPhase:(i*.31)%2.25,angle:0,alive:true};});chestnutZones=chestnutSites.map(site=>({...site,state:'idle',timer:0,dropped:0,announced:false}));fallingChestnuts=[];stars=starSites.map(s=>({...s,taken:false}));damageCount=0;fallCount=0;lastResult=null;$('result').hidden=true;$('overlay').classList.remove('is-result');$('messageCard').classList.remove('is-result');$('description').hidden=false;$('cardFoot').hidden=false;acorns=canopy?canopy.acorns.map(a=>({...a,taken:false})):acornSpots.map(x=>({x,y:groundAt(x).y-40,taken:false}));tokens=[];for(let x=220;x<GOAL-40;x+=155){const floor=groundAt(x);if(!floor||x<floor.x+24||x>floor.x+floor.w-24||obstacles.some(o=>x>o.x-28&&x<o.x+o.w+28))continue;if(acorns.every(a=>Math.abs(a.x-x)>44))tokens.push({x,y:floor.y-50,taken:false});}for(const p of platforms.filter(p=>p.kind!=='bridge'))for(let x=p.x+25;x<p.x+p.w-10;x+=40)if(stars.every(s=>Math.abs(s.x-x)>40||Math.abs(s.y-(p.y-33))>55))tokens.push({x,y:p.y-33,taken:false});particles=[];elapsed=0;coins=0;hearts=MAX_HEARTS;checkpoint=85;furthestRegion=0;camera=0;invincible=0;buffer=0;coyote=0;walkPhase=0;landing=0;runDust=0;configureRound();if(canopy){if(!area)checkpoint=32;canopyRun.checkpointY=player.y+player.h;arena.style.backgroundColor=regions[canopyRun.scene].sky;canopyCamera(0,true);}if(waterCourse){waterScene=waterCourse.sceneAt(player.x);updateWaterBackdrop();}clearInput();hud();}
+let furthestRegion=0,continueSection=0,firstClearRun=false;
+const sectionNames=['前半','中盤','後半'];
+function rememberSection(index){
+ if(firstClearRun&&index>continueSection)continueSection=index;
+}
+function reset(area=null){sceneTransition=null;waterScene=0;floatHintShown=false;$('sceneFade').hidden=true;if(waterCourse)waterCourse.resetPlatforms(platforms);practiceArea=area;continueSection=0;firstClearRun=!area&&!window.ShikabouJourney?.snapshot().cleared.includes(courseId);canopyRun=canopy?canopy.createRun(area,platforms):null;menuOpen=false;menuSnapshot=null;pausedFrom='playing';celebration=null;$('practiceMenu').hidden=true;$('backPractice').hidden=true;$('choosePractice').hidden=false;$('skipCelebration').hidden=true;$('overlay').classList.remove('is-menu');$('messageCard').classList.remove('is-menu');player={x:canopy&&!area?32:85,y:338,w:38,h:62,vx:0,vy:0,grounded:true,face:1};enemies=courseData?courseData.createEnemies():[[700,640,860],[1550,1400,1630],[2100,2020,2160],[2810,2650,2890],[3250,3160,3320],[3850,3770,4000],[5100,5000,5200],[6400,6280,6540],[7100,7080,7200],[7620,7540,7720],[8500,8370,8610],[9100,8980,9190],[10070,9990,10180],[11490,11400,11600]].map(([x,min,max],i)=>{const kind=x>=8200?'rock':x>=4400?'mushroom':'walker',baseY=groundAt(x).y-30;return{x,y:baseY,baseY,w:38,h:30,min,max,kind,v:(i%2?1:-1)*(kind==='rock'?72:kind==='mushroom'?24:44),vy:0,hopWait:.8+(i%3)*.35,rollPhase:(i*.31)%2.25,angle:0,alive:true};});chestnutZones=chestnutSites.map(site=>({...site,state:'idle',timer:0,dropped:0,announced:false}));fallingChestnuts=[];stars=starSites.map(s=>({...s,taken:false}));damageCount=0;fallCount=0;lastResult=null;$('result').hidden=true;$('overlay').classList.remove('is-result');$('messageCard').classList.remove('is-result');$('description').hidden=false;$('cardFoot').hidden=false;acorns=canopy?canopy.acorns.map(a=>({...a,taken:false})):acornSpots.map(x=>({x,y:groundAt(x).y-40,taken:false}));tokens=[];for(let x=220;x<GOAL-40;x+=155){const floor=groundAt(x);if(!floor||x<floor.x+24||x>floor.x+floor.w-24||obstacles.some(o=>x>o.x-28&&x<o.x+o.w+28))continue;if(acorns.every(a=>Math.abs(a.x-x)>44))tokens.push({x,y:floor.y-50,taken:false});}for(const p of platforms.filter(p=>p.kind!=='bridge'))for(let x=p.x+25;x<p.x+p.w-10;x+=40)if(stars.every(s=>Math.abs(s.x-x)>40||Math.abs(s.y-(p.y-33))>55))tokens.push({x,y:p.y-33,taken:false});particles=[];elapsed=0;coins=0;hearts=MAX_HEARTS;checkpoint=85;furthestRegion=0;camera=0;invincible=0;buffer=0;coyote=0;walkPhase=0;landing=0;runDust=0;configureRound();if(canopy){if(!area)checkpoint=32;canopyRun.checkpointY=player.y+player.h;arena.style.backgroundColor=regions[canopyRun.scene].sky;canopyCamera(0,true);}if(waterCourse){waterScene=waterCourse.sceneAt(player.x);updateWaterBackdrop();}clearInput();hud();}
 function configureRound(){
  if(!practiceArea)return;const a=practiceArea,inside=o=>o.x>=a.left&&o.x<a.right;
  enemies=enemies.filter(inside);tokens=tokens.filter(inside);acorns=acorns.filter(inside);stars=stars.filter(inside);chestnutZones=chestnutZones.filter(inside);
@@ -214,14 +218,35 @@ function updateCelebration(dt){
 }
 function burst(x,y,color,n=12){for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*220,vy:-Math.random()*220-40,life:.65,color});}
 function canContinueBoss(){return mode==='over'&&canopyRun?.scene===2&&canopyRun.boss?.hp>0;}
+function canContinueSection(){return mode==='over'&&firstClearRun&&continueSection>0;}
+function resumeAt(x,y,grace=0){
+ checkpoint=x;
+ Object.assign(player,{x,y:y-player.h,vx:0,vy:0,face:1,grounded:true,supportPlatform:null});
+ hearts=MAX_HEARTS;invincible=grace;buffer=0;coyote=0;landing=0;walkPhase=0;runDust=0;particles=[];
+ clearInput();mode='playing';updateMovementMode();
+ if(canopyRun)canopyCamera(0,true);else camera=cameraTarget(x-W*.33);
+ $('overlay').hidden=true;startMusic();hud();
+}
 function continueBoss(){
  const point=canopy.bossCheckpoint;
- canopy.resetBoss(canopyRun);checkpoint=point.x;canopyRun.checkpointY=point.y;canopyRun.checkpointIndex=checkpoints.indexOf(point);
- Object.assign(player,{x:point.x,y:point.y-player.h,vx:0,vy:0,face:1,grounded:true,supportPlatform:null});
- hearts=MAX_HEARTS;invincible=0;buffer=0;coyote=0;landing=0;walkPhase=0;runDust=0;particles=[];
- clearInput();mode='playing';updateMovementMode();canopyCamera(0,true);$('overlay').hidden=true;startMusic();hud();
+ canopy.resetBoss(canopyRun);canopyRun.checkpointY=point.y;canopyRun.checkpointIndex=checkpoints.indexOf(point);
+ resumeAt(point.x,point.y);
 }
-function damage(fall=false){if(mode==='celebrating'||mode==='won')return;if(invincible>0&&!fall)return;damageCount++;if(fall)fallCount++;hearts--;beep(160,.22,'triangle');burst(player.x+20,player.y+30,'#e47d5b');if(hearts<=0){mode='over';stopMusic();clearInput();hud();if(canContinueBoss()){overlay('大蜘蛛にもう一度挑戦！','大蜘蛛の手前から再開できます。<br>ハートは3つに戻り、集めた星とコインはそのままです。','ボス戦からコンテニュー →','TRY AGAIN');return;}overlay('もう一度、いこう！',`コイン ${coins} 枚を集めました。<br>あせらず、穴の手前からジャンプしよう。`,'もう一度チャレンジ →','TRY AGAIN');return;}if(fall){if(moveStyle==='tap')setTapDirection(null);player.x=checkpoint;player.y=(canopyRun?.checkpointY??groundAt(checkpoint)?.y??GROUND)-player.h;player.vx=0;player.vy=0;player.grounded=true;camera=cameraTarget(player.x-W*.28);player.supportPlatform=null;if(canopyRun){canopyRun.bind=0;canopyRun.webCooldown=0;canopyRun.falling=[];canopyRun.boss=null;canopyCamera(0,true);}if(waterCourse){waterScene=waterCourse.sceneAt(player.x);updateWaterBackdrop();}showToast(checkpoint>85?'中間地点から、もう一度！':'スタートから、もう一度！');}else{player.vx=-player.face*220;player.vy=-270;}invincible=1.7;hud();}
+function continueFromSection(){
+ const area=practiceAreas[continueSection],y=groundAt(area.start)?.y??GROUND;
+ if(canopy){
+  canopyRun=canopy.createRun(area,platforms);canopyRun.checkpointY=y;
+  arena.style.backgroundColor=regions[continueSection].sky;
+ }
+ if(waterCourse){waterScene=continueSection;waterCourse.resetPlatforms(platforms);updateWaterBackdrop();}
+ fallingChestnuts=[];
+ resumeAt(area.start,y,1);
+ showToast(`${sectionNames[continueSection]}「${area.name}」から再開！`);
+}
+function damage(fall=false){if(mode==='celebrating'||mode==='won')return;if(invincible>0&&!fall)return;damageCount++;if(fall)fallCount++;hearts--;beep(160,.22,'triangle');burst(player.x+20,player.y+30,'#e47d5b');if(hearts<=0){mode='over';stopMusic();clearInput();hud();if(canContinueBoss()){overlay('大蜘蛛にもう一度挑戦！','大蜘蛛の手前から再開できます。<br>ハートは3つに戻り、集めた星とコインはそのままです。','ボス戦からコンテニュー →','TRY AGAIN');return;}if(canContinueSection()){
+ const section=sectionNames[continueSection],area=practiceAreas[continueSection];
+ overlay('ここから、もう一度！',`${section}「${area.name}」の入口から再開できます。<br>ハートは3つに戻り、集めた星とコインはそのままです。`,`${section}からコンテニュー →`,'TRY AGAIN');return;
+ }overlay('もう一度、いこう！',`コイン ${coins} 枚を集めました。<br>あせらず、穴の手前からジャンプしよう。`,'もう一度チャレンジ →','TRY AGAIN');return;}if(fall){if(moveStyle==='tap')setTapDirection(null);player.x=checkpoint;player.y=(canopyRun?.checkpointY??groundAt(checkpoint)?.y??GROUND)-player.h;player.vx=0;player.vy=0;player.grounded=true;camera=cameraTarget(player.x-W*.28);player.supportPlatform=null;if(canopyRun){canopyRun.bind=0;canopyRun.webCooldown=0;canopyRun.falling=[];canopyRun.boss=null;canopyCamera(0,true);}if(waterCourse){waterScene=waterCourse.sceneAt(player.x);updateWaterBackdrop();}showToast(checkpoint>85?'中間地点から、もう一度！':'スタートから、もう一度！');}else{player.vx=-player.face*220;player.vy=-270;}invincible=1.7;hud();}
 function overlaps(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
 // Each species keeps its own predictable rhythm; all share the stomp rule.
 function updateEnemy(e,dt){
@@ -274,7 +299,7 @@ function configureCourseMenu(){
  if(canopy){
   $('arena').setAttribute('aria-label','縦と横にスクロールするアクションゲーム');
   $('game').setAttribute('aria-label','シカぼうを操作して大樹を登り、風を読んで大蜘蛛を倒そう');
-  $('tag').textContent='COURSE 1-3 / v0.13.1';$('message').innerHTML='風に揺れる<br>大樹の森';
+  $('tag').textContent='COURSE 1-3 / v0.13.2';$('message').innerHTML='風に揺れる<br>大樹の森';
   $('description').innerHTML='根元から頂上へ。葉と枝をつたって登ろう。<br>梢では風を読み、大樹の主・大蜘蛛に挑め！<br>金色の葉は、かくれ星の手がかり。'+(coursePreview?'<br>おためしプレイ：進行は保存されません。':'');
   $('start').textContent=courseAllowed?'1-3に挑戦 →':'エリアマップへ →';
   document.querySelectorAll('[data-practice]').forEach((b,i)=>{const a=practiceAreas[i];b.dataset.practice=String(a.key);b.innerHTML=`<strong>0${i+1} · ${a.name}</strong><span>${a.hint}</span>`;});
@@ -282,7 +307,7 @@ function configureCourseMenu(){
   return;
  }
  if(!waterCourse)return;
- $('tag').textContent='COURSE 1-2 / v0.13.1';$('message').innerHTML='水辺の向こうに、<br>ひみつの洞窟。';
+ $('tag').textContent='COURSE 1-2 / v0.13.2';$('message').innerHTML='水辺の向こうに、<br>ひみつの洞窟。';
  $('description').innerHTML='水辺 → 洞窟 → 夕映えの水辺。<br>沈む丸太を跳び、4種類の敵を見極めよう。<br>星は3つ、回復のドングリは6個。'+(coursePreview?'<br>おためしプレイ：進行は保存されません。':'');
  $('start').textContent=courseAllowed?'1-2に挑戦 →':'エリアマップへ →';
  document.querySelectorAll('[data-practice]').forEach((b,i)=>{const a=practiceAreas[i];b.dataset.practice=String(a.key);b.innerHTML=`<strong>0${i+1} · ${a.name}</strong><span>${a.hint}</span>`;});
@@ -307,7 +332,7 @@ function updateSceneTransition(dt){
  if(!t.switched&&t.time>=.4){
   t.switched=true;waterScene=t.to;updateWaterBackdrop();player.x=t.target;player.y=(groundAt(player.x)?.y||GROUND)-player.h;player.vx=0;player.vy=0;player.grounded=true;player.face=t.to>=furthestRegion/4000?1:-1;landing=0;particles=[];
   if(canopyRun){canopyRun.scene=t.to;canopyRun.checkpointY=player.y+player.h;canopyRun.bind=0;canopyRun.falling=[];arena.style.backgroundColor=regions[t.to].sky;canopyCamera(0,true);}
-  checkpoint=Math.max(checkpoint,player.x);furthestRegion=Math.max(furthestRegion,regions[t.to].x);camera=cameraTarget(player.x-W*.33);hud();
+  rememberSection(t.to);checkpoint=Math.max(checkpoint,player.x);furthestRegion=Math.max(furthestRegion,regions[t.to].x);camera=cameraTarget(player.x-W*.33);hud();
  }
  if(t.time>=1.15){sceneTransition=null;mode='playing';$('sceneFade').hidden=true;invincible=Math.max(invincible,1);jumpHeld=input.jump;buffer=0;updateMovementMode();startMusic();showToast(regions[canopyRun?.scene??waterScene].hint||'せせらぎの水辺へ戻った');}
 }
@@ -346,6 +371,7 @@ for(const t of [...terrain,...obstacles,...platforms]){if(t.collidable===false)c
 if(player.vy<0)for(const t of [...terrain,...obstacles]){if(previousTop>=t.y+t.h&&player.y<t.y+t.h&&player.x+player.w-5>t.x&&player.x+5<t.x+t.w){player.y=t.y+t.h;player.vy=0;break;}}
 if(!wasGrounded&&player.grounded){if(buffer>0)launchJump();else{landing=1;burst(player.x+19,player.y+62,'#f3e4bd',6);beep(160,.035,'triangle');}}
 if(waterCourse&&!practiceArea&&checkScenePortal())return;
+if(!courseData)rememberSection(regions.indexOf(regionAt(player.x)));
 if(waterCourse&&waterScene!==1&&player.y+player.h>431&&!groundAt(player.x+player.w/2)){burst(player.x+19,431,'#bce7de',18);damage(true);if(mode!=='playing')return;}
 if(canopyRun){
  const f=player.y+player.h;
@@ -536,7 +562,7 @@ if(canopy&&mode==='celebrating'&&celebration.time>.27&&celebration.time<1.82){
 }if(canopy)canopy.drawBindings(ctx,canopyRun,player);for(const p of particles){ctx.globalAlpha=Math.min(1,p.life*2);rect(p.x,p.y,5,5,1,p.color);}ctx.globalAlpha=1;ctx.restore();ctx.restore();}
 function resize(){recordInput('画面サイズ変更');const r=canvas.getBoundingClientRect?.()||arena.getBoundingClientRect();if(!(r.width>0&&r.height>0))return;dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);W=Math.max(360,Math.min(1500,r.width/r.height*H));if(canopyRun)canopyCamera(0,true);else camera=cameraTarget(player?.x-W*.33||0);render();}
 function frame(t){const began=inputRealNow(),gap=last?Math.max(0,t-last):0;if(!last)last=t;acc+=Math.min((t-last)/1000,.08);last=t;while(acc>=STEP){update(STEP);acc-=STEP;}render();frameSamples.push({at:inputRealNow(),gap,work:Math.max(0,inputRealNow()-began)});if(frameSamples.length>240)frameSamples.shift();requestAnimationFrame(frame);}
-$('start').addEventListener('click',()=>{if(mode==='won'&&!practiceArea&&!menuOpen){location.assign('area-map.html');return;}if(mode==='paused'&&!menuOpen)pause();else if(!menuOpen&&canContinueBoss())continueBoss();else startRound(menuOpen?null:practiceArea);});
+$('start').addEventListener('click',()=>{if(mode==='won'&&!practiceArea&&!menuOpen){location.assign('area-map.html');return;}if(mode==='paused'&&!menuOpen)pause();else if(!menuOpen&&canContinueBoss())continueBoss();else if(!menuOpen&&canContinueSection())continueFromSection();else startRound(menuOpen?null:practiceArea);});
 $('movementMode').addEventListener('click',()=>{
  clearInput();moveStyle=moveStyle==='hold'?'tap':'hold';
  try{window.localStorage?.setItem('shikabou.moveStyle',moveStyle);}catch{}

@@ -2,7 +2,7 @@
 const APP=new URL(self.registration.scope);
 const ROOT=APP.pathname;
 const CACHE_PREFIX='shikabou-distribution:'+ROOT+':';
-const VERSION='0.13.1';
+const VERSION='0.13.2';
 const CACHE=CACHE_PREFIX+VERSION;
 const MARKER=ROOT+'__shikabou_cached_bundle__';
 const base=[

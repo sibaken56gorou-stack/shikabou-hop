@@ -90,7 +90,7 @@
  $('courseNo').addEventListener('click',()=>dialog.close());
  $('courseYes').addEventListener('click',()=>{
   if(selected===null)return;const c=courses[selected];if(!available(c))return;
-  if(c.ready){stopMapMusic();location.assign(`./?v=0.13.1&course=${c.id}&play=1${preview?'&preview=1':''}`);return;}
+  if(c.ready){stopMapMusic();location.assign(`./?v=0.13.2&course=${c.id}&play=1${preview?'&preview=1':''}`);return;}
   $('courseTitle').textContent=`${c.id}は、ただいま準備中`;$('courseDescription').textContent='マップでの移動と確認はここまで。\n新しいコースができたら、ここから出発できます。';$('courseYes').hidden=true;$('courseNo').textContent='マップに戻る';$('courseNo').focus();
  });
  dialog.addEventListener('close',()=>{selected=null;buttons[current].focus();});
